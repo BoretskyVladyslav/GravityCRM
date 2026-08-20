@@ -1,2 +1,5 @@
-// Placeholder for Project modular components (Phase 6)
-export {}
+export * from './project-status-badge'
+export * from './project-status-select'
+export * from './project-dialog'
+export * from './project-filters'
+export * from './project-table'
