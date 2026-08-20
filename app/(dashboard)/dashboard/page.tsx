@@ -1,130 +1,184 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import {
-  Users,
-  FolderKanban,
-  DollarSign,
-  AlertCircle,
-  Clock,
-  CheckCircle2,
-  TrendingUp,
-} from 'lucide-react'
+  TodayFocusCard,
+  ProjectPipelineCard,
+  FinancialSummaryCard,
+  ClientMetricsCard,
+} from '@/components/dashboard'
+import { isTaskOverdue, isTaskDueToday } from '@/components/tasks'
+import type { Client, Project, Payment, Task, ClientSource, Currency } from '@/lib/types'
+import type { TaskWithRelations } from '@/components/tasks/task-item'
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let clients: Client[] = []
+  let projects: Project[] = []
+  let payments: Payment[] = []
+  let tasks: TaskWithRelations[] = []
+  let recentIncomingLogs: Array<{ client_id: string; created_at: string }> = []
+
+  if (user) {
+    const [clientsRes, projectsRes, paymentsRes, tasksRes, commsRes] = await Promise.all([
+      supabase.from('clients').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('projects').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('payments').select('*').eq('owner_id', user.id),
+      supabase
+        .from('tasks')
+        .select(`
+          *,
+          clients (
+            id,
+            full_name,
+            company
+          ),
+          projects (
+            id,
+            title
+          )
+        `)
+        .eq('owner_id', user.id)
+        .order('due_date', { ascending: true }),
+      supabase
+        .from('communication_log')
+        .select('client_id, created_at')
+        .eq('owner_id', user.id)
+        .eq('direction', 'INCOMING')
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ])
+
+    if (clientsRes.data) clients = clientsRes.data
+    if (projectsRes.data) projects = projectsRes.data
+    if (paymentsRes.data) payments = paymentsRes.data
+    if (tasksRes.data) tasks = tasksRes.data
+    if (commsRes.data) recentIncomingLogs = commsRes.data
+  }
+
+  // 1. Calculate Today's Focus Metrics
+  const now = new Date()
+  const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000)
+
+  const newLeads = clients.filter(
+    (c) => c.status === 'LEAD' && new Date(c.created_at) >= fortyEightHoursAgo
+  )
+  const overdueTasks = tasks.filter((t) => isTaskOverdue(t.due_date, t.status))
+  const dueTodayTasks = tasks.filter((t) => isTaskDueToday(t.due_date, t.status))
+
+  // Unanswered clients: recent incoming logs
+  const incomingClientIds = new Set(recentIncomingLogs.map((l) => l.client_id))
+  const unansweredClientsCount = incomingClientIds.size
+
+  const urgentTasks = [...overdueTasks, ...dueTodayTasks]
+
+  // 2. Calculate Project Pipeline Metrics
+  const inProgressCount = projects.filter((p) => p.status === 'IN_PROGRESS').length
+  const waitingCount = projects.filter(
+    (p) => p.status === 'WAITING_CLIENT' || p.status === 'WAITING_PAYMENT'
+  ).length
+  const revisionsCount = projects.filter((p) => p.status === 'REVISIONS').length
+  const completedCount = projects.filter((p) => p.status === 'COMPLETED').length
+  const totalProjects = projects.length
+
+  // 3. Calculate Financial Summary (On-the-Fly)
+  const totalBudget = projects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0)
+  const totalPaid = payments
+    .filter((p) => p.status === 'PAID')
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+  const totalOutstanding = Math.max(0, totalBudget - totalPaid)
+
+  const currencyBreakdown: Record<Currency, { budget: number; paid: number }> = {
+    USD: { budget: 0, paid: 0 },
+    EUR: { budget: 0, paid: 0 },
+    UAH: { budget: 0, paid: 0 },
+    PLN: { budget: 0, paid: 0 },
+  }
+
+  projects.forEach((p) => {
+    if (currencyBreakdown[p.currency]) {
+      currencyBreakdown[p.currency].budget += Number(p.budget) || 0
+    }
+  })
+
+  payments.forEach((p) => {
+    if (p.status === 'PAID' && currencyBreakdown[p.currency]) {
+      currencyBreakdown[p.currency].paid += Number(p.amount) || 0
+    }
+  })
+
+  // 4. Calculate Client Metrics
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const newThisMonth = clients.filter(
+    (c) => new Date(c.created_at) >= startOfMonth
+  ).length
+  const activeClients = clients.filter(
+    (c) => c.status === 'ACTIVE' || c.status === 'CLIENT'
+  ).length
+
+  const sourcesBreakdown: Record<ClientSource, number> = {
+    FREELANCEHUNT: 0,
+    TELEGRAM: 0,
+    REFERRAL: 0,
+    WEBSITE: 0,
+    OTHER: 0,
+  }
+
+  clients.forEach((c) => {
+    if (sourcesBreakdown[c.source] !== undefined) {
+      sourcesBreakdown[c.source] += 1
+    }
+  })
+
   return (
     <div className="space-y-6">
+      {/* Top Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Дашборд</h1>
-        <p className="text-sm text-muted-foreground">
-          Огляд ключових показників та завдань на сьогодні
+        <h1 className="text-2xl font-bold tracking-tight">Головний дашборд</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Оперативний огляд ключових показників, стану пайплайну та фінансів
         </p>
       </div>
 
-      {/* 4 Core Blocks from Phase 0 Discovery */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Block 1: Сьогодні */}
-        <Card className="border-border/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Сьогодні</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Нові ліди:</span>
-              <span className="font-semibold">0</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Прострочені задачі:</span>
-              <Badge variant="destructive" className="px-1.5 py-0 text-xs">0</Badge>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Потрібна відповідь:</span>
-              <span className="font-semibold">0</span>
-            </div>
-          </CardContent>
-        </Card>
+      {/* 4 Core Focus Cards (Discovery Architecture) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Block 1: СЬОГОДНІ (Фокус дня) */}
+        <TodayFocusCard
+          newLeadsCount={newLeads.length}
+          recentLeads={newLeads}
+          overdueTasksCount={overdueTasks.length}
+          dueTodayTasksCount={dueTodayTasks.length}
+          urgentTasks={urgentTasks}
+          unansweredClientsCount={unansweredClientsCount}
+        />
 
-        {/* Block 2: Проєкти */}
-        <Card className="border-border/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Проєкти</CardTitle>
-            <FolderKanban className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">В роботі (Active):</span>
-              <span className="font-semibold">0</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Очікування (Waiting):</span>
-              <span className="font-semibold">0</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Завершені (Completed):</span>
-              <span className="font-semibold text-emerald-500">0</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Block 2: ПРОЄКТИ (Стан пайплайну) */}
+        <ProjectPipelineCard
+          inProgressCount={inProgressCount}
+          waitingCount={waitingCount}
+          revisionsCount={revisionsCount}
+          completedCount={completedCount}
+          totalProjects={totalProjects}
+        />
 
-        {/* Block 3: Гроші */}
-        <Card className="border-border/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Гроші (On-the-Fly)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Загальний бюджет:</span>
-              <span className="font-semibold">$0.00</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Оплачено:</span>
-              <span className="font-semibold text-emerald-500">$0.00</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Залишок (Outstanding):</span>
-              <span className="font-semibold text-amber-500">$0.00</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Block 3: ГРОШІ (Фінансовий баланс) */}
+        <FinancialSummaryCard
+          totalBudget={totalBudget}
+          totalPaid={totalPaid}
+          totalOutstanding={totalOutstanding}
+          currencyBreakdown={currencyBreakdown}
+        />
 
-        {/* Block 4: Клієнти */}
-        <Card className="border-border/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Клієнти</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Всього клієнтів:</span>
-              <span className="font-semibold">0</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Активні:</span>
-              <span className="font-semibold">0</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Нові цього місяця:</span>
-              <span className="font-semibold text-primary">0</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Block 4: КЛІЄНТИ (Метрики бази) */}
+        <ClientMetricsCard
+          totalClients={clients.length}
+          activeClients={activeClients}
+          newThisMonth={newThisMonth}
+          sourcesBreakdown={sourcesBreakdown}
+        />
       </div>
-
-      {/* Architecture Readiness Card */}
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-            <div className="text-sm">
-              <span className="font-semibold">Phase 2 завершено успішно:</span> Next.js 16, shadcn/ui, Supabase helpers та типізацію підключено.
-            </div>
-          </div>
-          <Badge variant="outline" className="border-primary/30 text-primary">
-            Готово до Phase 3 (Database & RLS)
-          </Badge>
-        </CardContent>
-      </Card>
     </div>
   )
 }

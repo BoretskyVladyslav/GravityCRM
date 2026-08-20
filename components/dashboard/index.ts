@@ -1,2 +1,4 @@
-// Placeholder for Dashboard modular components (Phase 11)
-export {}
+export * from './today-focus-card'
+export * from './project-pipeline-card'
+export * from './financial-summary-card'
+export * from './client-metrics-card'
