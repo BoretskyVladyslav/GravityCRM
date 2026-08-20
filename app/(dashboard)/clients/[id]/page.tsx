@@ -4,6 +4,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ClientStatusBadge, ClientSourceBadge, ClientStatusSelect, ClientDialog } from '@/components/clients'
 import { PaymentDialog } from '@/components/payments'
 import { TaskItem, TaskDialog } from '@/components/tasks'
+import { CommunicationTimeline } from '@/components/communication'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -91,12 +92,18 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   // 5. Fetch Communication Log
   const { data: commsData } = await supabase
     .from('communication_log')
-    .select('*')
+    .select(`
+      *,
+      projects (
+        id,
+        title
+      )
+    `)
     .eq('client_id', id)
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false })
 
-  const communicationLogs: CommunicationLog[] = commsData || []
+  const communicationLogs = commsData || []
 
   // 6. Compute Financials On-the-Fly
   const totalBudget = projects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0)
@@ -335,66 +342,11 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
         {/* Tab 2: Timeline (Communication Log) */}
         <TabsContent value="timeline" className="space-y-3">
-          {communicationLogs.length > 0 ? (
-            <div className="space-y-3">
-              {communicationLogs.map((log) => {
-                const isIncoming = log.direction === 'INCOMING'
-                const formattedTime = new Date(log.created_at).toLocaleDateString('uk-UA', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-
-                return (
-                  <div
-                    key={log.id}
-                    className="p-4 rounded-xl bg-card border border-border/60 flex items-start gap-3.5"
-                  >
-                    <div
-                      className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        isIncoming
-                          ? 'bg-blue-500/10 text-blue-400'
-                          : 'bg-emerald-500/10 text-emerald-400'
-                      }`}
-                    >
-                      {isIncoming ? (
-                        <ArrowDownLeft className="h-4 w-4" />
-                      ) : (
-                        <ArrowUpRight className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold">
-                          {isIncoming ? 'Вхідне повідомлення' : 'Вихідна відповідь'}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] py-0">
-                            {log.channel}
-                          </Badge>
-                          <span className="text-[11px] text-muted-foreground">{formattedTime}</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                        {log.message}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <Card className="border-dashed border-2 border-border/60">
-              <CardHeader className="text-center py-8">
-                <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                <CardTitle className="text-sm">Історія комунікації порожня</CardTitle>
-                <CardDescription className="text-xs">
-                  Повідомлення з Telegram та ручні записи фіксуватимуться тут автоматично.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
+          <CommunicationTimeline
+            logs={communicationLogs}
+            clientId={client.id}
+            projects={projects.map((p) => ({ id: p.id, title: p.title }))}
+          />
         </TabsContent>
 
         {/* Tab 3: Tasks */}

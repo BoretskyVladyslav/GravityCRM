@@ -4,6 +4,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ProjectStatusBadge, ProjectStatusSelect, ProjectDialog } from '@/components/projects'
 import { PaymentDialog } from '@/components/payments'
 import { TaskItem, TaskDialog } from '@/components/tasks'
+import { CommunicationTimeline } from '@/components/communication'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -398,66 +399,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
         {/* Tab 3: Communication Log */}
         <TabsContent value="comms" className="space-y-3">
-          {communicationLogs.length > 0 ? (
-            <div className="space-y-3">
-              {communicationLogs.map((log) => {
-                const isIncoming = log.direction === 'INCOMING'
-                const formattedTime = new Date(log.created_at).toLocaleDateString('uk-UA', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-
-                return (
-                  <div
-                    key={log.id}
-                    className="p-4 rounded-xl bg-card border border-border/60 flex items-start gap-3.5"
-                  >
-                    <div
-                      className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        isIncoming
-                          ? 'bg-blue-500/10 text-blue-400'
-                          : 'bg-emerald-500/10 text-emerald-400'
-                      }`}
-                    >
-                      {isIncoming ? (
-                        <ArrowDownLeft className="h-4 w-4" />
-                      ) : (
-                        <ArrowUpRight className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold">
-                          {isIncoming ? 'Вхідне повідомлення' : 'Вихідна відповідь'}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] py-0">
-                            {log.channel}
-                          </Badge>
-                          <span className="text-[11px] text-muted-foreground">{formattedTime}</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                        {log.message}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <Card className="border-dashed border-2 border-border/60">
-              <CardHeader className="text-center py-8">
-                <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                <CardTitle className="text-sm">Історія комунікацій за цим проєктом порожня</CardTitle>
-                <CardDescription className="text-xs">
-                  Повідомлення, пов&apos;язані з цим проєктом, будуть з&apos;являтися тут.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
+          <CommunicationTimeline
+            logs={communicationLogs}
+            clientId={project.client_id}
+            projectId={project.id}
+          />
         </TabsContent>
 
         {/* Tab 4: Notes */}
