@@ -38,30 +38,41 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refresh auth session
+  // Refresh auth session by fetching the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  const isApiWebhook = request.nextUrl.pathname.startsWith('/api/telegram')
-  const isPublicRoute =
-    request.nextUrl.pathname === '/' ||
-    isAuthRoute ||
-    isApiWebhook ||
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/favicon.ico')
+  const pathname = request.nextUrl.pathname
+  const isAuthRoute = pathname.startsWith('/login')
+  const isApiWebhook = pathname.startsWith('/api/telegram')
+  const isStatic =
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon.ico') ||
+    pathname.includes('.')
 
-  // Protect private routes
-  if (!user && !isPublicRoute) {
+  if (isStatic || isApiWebhook) {
+    return supabaseResponse
+  }
+
+  const isProtectedRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/clients') ||
+    pathname.startsWith('/projects') ||
+    pathname.startsWith('/payments') ||
+    pathname.startsWith('/tasks') ||
+    pathname.startsWith('/settings')
+
+  // 1. Unauthenticated users trying to access protected routes -> /login
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    url.searchParams.set('redirectTo', request.nextUrl.pathname)
+    url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users from /login to /dashboard
-  if (user && isAuthRoute) {
+  // 2. Authenticated users accessing /login or / -> /dashboard
+  if (user && (isAuthRoute || pathname === '/')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

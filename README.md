@@ -100,7 +100,7 @@ supabase migration up
 - [x] **Phase 1: Architecture** — Документ архітектури, ERD, життєві цикли сутностей, безпека.
 - [x] **Phase 2: Project Setup** — Next.js 16, TypeScript, Tailwind CSS, shadcn/ui, Supabase helpers, Zod.
 - [x] **Phase 3: Database** — Створення таблиць, enum-ів, індексів, тригерів та суворих RLS політик.
-- [ ] **Phase 4: Auth** — Автентифікація користувача, захист сесій через middleware, кабінет.
+- [x] **Phase 4: Auth** — Автентифікація користувача, захист сесій через middleware, кабінет, форми входу/реєстрації.
 - [ ] **Phase 5: Clients** — Модуль клієнтів (CRUD, пошук, фільтри за джерелами, timeline).
 - [ ] **Phase 6: Projects** — Модуль проєктів (життєвий цикл, дедлайни, прив'язка до клієнтів).
 - [ ] **Phase 7: Payments** — Фінансовий модуль із динамічним розрахунком на льоту (без дублювання).
