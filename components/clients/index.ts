@@ -1,2 +1,6 @@
-// Placeholder for Client modular components (Phase 5)
-export {}
+export * from './client-dialog'
+export * from './client-table'
+export * from './client-filters'
+export * from './client-status-badge'
+export * from './client-source-badge'
+export * from './client-status-select'

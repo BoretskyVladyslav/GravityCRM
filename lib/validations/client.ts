@@ -19,14 +19,45 @@ export const clientStatusEnum = z.enum([
 
 export const clientSchema = z.object({
   full_name: z.string().min(2, "Ім'я клієнта обов'язкове (мінімум 2 символи)"),
-  username: z.string().optional().nullable(),
-  telegram_id: z.coerce.number().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  email: z.string().email('Некоректний email').optional().nullable().or(z.literal('')),
-  company: z.string().optional().nullable(),
+  username: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim().replace(/^@/, '') : null)),
+  telegram_id: z
+    .union([z.string(), z.number()])
+    .optional()
+    .nullable()
+    .transform((val) => {
+      if (val === undefined || val === null || val === '') return null
+      const num = typeof val === 'string' ? parseInt(val, 10) : val
+      return isNaN(num) ? null : num
+    }),
+  phone: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
+  email: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null))
+    .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+      message: 'Некоректний формат email',
+    }),
+  company: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
   source: clientSourceEnum.default('FREELANCEHUNT'),
   status: clientStatusEnum.default('LEAD'),
-  notes: z.string().optional().nullable(),
+  notes: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
 })
 
 export type ClientFormValues = z.infer<typeof clientSchema>
