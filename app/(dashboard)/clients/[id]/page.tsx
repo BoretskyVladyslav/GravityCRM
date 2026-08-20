@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ClientStatusBadge, ClientSourceBadge, ClientStatusSelect, ClientDialog } from '@/components/clients'
+import { PaymentDialog } from '@/components/payments'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -455,6 +456,23 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
         {/* Tab 4: Payments */}
         <TabsContent value="payments" className="space-y-3">
+          <div className="flex justify-end">
+            <PaymentDialog
+              clients={[{ id: client.id, full_name: client.full_name, company: client.company }]}
+              projects={projects.map((p) => ({
+                id: p.id,
+                client_id: client.id,
+                title: p.title,
+              }))}
+              defaultClientId={client.id}
+              trigger={
+                <Button size="sm" className="gap-1.5 shadow-xs">
+                  <Plus className="h-4 w-4" /> Додати платіж
+                </Button>
+              }
+            />
+          </div>
+
           {payments.length > 0 ? (
             <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
               <div className="p-3 text-xs font-semibold text-muted-foreground border-b border-border/40 grid grid-cols-4">
@@ -496,7 +514,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
                 <CreditCard className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
                 <CardTitle className="text-sm">Історія платежів порожня</CardTitle>
                 <CardDescription className="text-xs">
-                  Фінансові операції фіксуватимуться на сторінці платежів (Phase 7).
+                  Зафіксуйте перший платіж за цим клієнтом.
                 </CardDescription>
               </CardHeader>
             </Card>

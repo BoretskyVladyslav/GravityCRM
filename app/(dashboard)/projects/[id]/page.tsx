@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ProjectStatusBadge, ProjectStatusSelect, ProjectDialog } from '@/components/projects'
+import { PaymentDialog } from '@/components/payments'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +22,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   ExternalLink,
+  Plus,
 } from 'lucide-react'
 import type { Project, Payment, Task, CommunicationLog, Client } from '@/lib/types'
 
@@ -341,6 +343,20 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
         {/* Tab 2: Payments */}
         <TabsContent value="payments" className="space-y-3">
+          <div className="flex justify-end">
+            <PaymentDialog
+              clients={allClients || []}
+              projects={[{ id: project.id, client_id: project.client_id, title: project.title }]}
+              defaultClientId={project.client_id}
+              defaultProjectId={project.id}
+              trigger={
+                <Button size="sm" className="gap-1.5 shadow-xs">
+                  <Plus className="h-4 w-4" /> Додати платіж
+                </Button>
+              }
+            />
+          </div>
+
           {payments.length > 0 ? (
             <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
               <div className="p-3 text-xs font-semibold text-muted-foreground border-b border-border/40 grid grid-cols-4">
@@ -384,7 +400,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 <CreditCard className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
                 <CardTitle className="text-sm">Платежів ще не зафіксовано</CardTitle>
                 <CardDescription className="text-xs">
-                  Фіксуйте передоплати та поетапні виплати у модулі &quot;Платежі&quot; (Phase 7).
+                  Зафіксуйте передоплату або поетапну виплату за цим проєктом.
                 </CardDescription>
               </CardHeader>
             </Card>

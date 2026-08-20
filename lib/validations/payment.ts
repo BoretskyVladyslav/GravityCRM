@@ -10,14 +10,39 @@ export const paymentStatusEnum = z.enum([
 ])
 
 export const paymentSchema = z.object({
-  client_id: z.string().uuid('Оберіть клієнта'),
-  project_id: z.string().uuid().optional().nullable(),
-  amount: z.coerce.number().positive('Сума платежу має бути більшою за 0'),
+  client_id: z.string().uuid('Оберіть клієнта зі списку'),
+  project_id: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
+  amount: z
+    .union([z.string(), z.number()])
+    .transform((val) => {
+      if (val === undefined || val === null || val === '') return 0
+      const num = typeof val === 'string' ? parseFloat(val) : val
+      return isNaN(num) ? 0 : num
+    })
+    .refine((val) => val > 0, {
+      message: 'Сума платежу має бути більшою за 0',
+    }),
   currency: currencyEnum.default('USD'),
   status: paymentStatusEnum.default('PAID'),
-  payment_method: z.string().optional().nullable(),
-  paid_at: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
+  payment_method: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
+  paid_at: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
+  description: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val && val.trim() ? val.trim() : null)),
 })
 
 export type PaymentFormValues = z.infer<typeof paymentSchema>
