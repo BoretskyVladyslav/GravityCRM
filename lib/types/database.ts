@@ -31,9 +31,9 @@ export interface Database {
           source: ClientSource
           status: ClientStatus
           notes: string | null
+          last_contact_at: string | null
           created_at: string
           updated_at: string | null
-          last_contact_at: string | null
         }
         Insert: {
           id?: string
@@ -47,9 +47,9 @@ export interface Database {
           source?: ClientSource
           status?: ClientStatus
           notes?: string | null
+          last_contact_at?: string | null
           created_at?: string
           updated_at?: string | null
-          last_contact_at?: string | null
         }
         Update: {
           id?: string
@@ -63,9 +63,9 @@ export interface Database {
           source?: ClientSource
           status?: ClientStatus
           notes?: string | null
+          last_contact_at?: string | null
           created_at?: string
           updated_at?: string | null
-          last_contact_at?: string | null
         }
         Relationships: []
       }
@@ -77,7 +77,7 @@ export interface Database {
           title: string
           description: string | null
           status: ProjectStatus
-          budget: number | null
+          budget: number
           currency: Currency
           start_date: string | null
           deadline: string | null
@@ -93,7 +93,7 @@ export interface Database {
           title: string
           description?: string | null
           status?: ProjectStatus
-          budget?: number | null
+          budget?: number
           currency?: Currency
           start_date?: string | null
           deadline?: string | null
@@ -109,7 +109,7 @@ export interface Database {
           title?: string
           description?: string | null
           status?: ProjectStatus
-          budget?: number | null
+          budget?: number
           currency?: Currency
           start_date?: string | null
           deadline?: string | null
@@ -281,26 +281,40 @@ export interface Database {
         Row: {
           update_id: number
           processed_at: string
-          status: string
+          status: string | null
           error_message: string | null
         }
         Insert: {
           update_id: number
           processed_at?: string
-          status?: string
+          status?: string | null
           error_message?: string | null
         }
         Update: {
           update_id?: number
           processed_at?: string
-          status?: string
+          status?: string | null
           error_message?: string | null
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      project_financial_summaries: {
+        Row: {
+          project_id: string | null
+          owner_id: string | null
+          client_id: string | null
+          title: string | null
+          budget: number | null
+          currency: Currency | null
+          project_status: ProjectStatus | null
+          total_paid: number | null
+          remaining_balance: number | null
+          computed_payment_status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
