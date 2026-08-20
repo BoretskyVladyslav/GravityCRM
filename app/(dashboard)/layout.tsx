@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { GlobalSearchDialog } from '@/components/search'
 import { createClient } from '@/lib/supabase/server'
 import { signOutAction } from '@/app/(auth)/actions'
 
@@ -115,14 +116,19 @@ export default async function DashboardLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-border/60 px-6 flex items-center justify-between bg-card/20 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs font-normal border-emerald-500/30 text-emerald-500">
-              ● Phase 4 Ready: Auth & Security
-            </Badge>
+        <header className="h-14 border-b border-border/60 px-6 flex items-center justify-between gap-4 bg-card/20 backdrop-blur-sm">
+          {/* Global Search Command Trigger */}
+          <div className="flex-1 max-w-md">
+            <GlobalSearchDialog />
           </div>
-          <div className="text-xs text-muted-foreground">
-            GravityCRM • Next.js 16 + Supabase
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Badge variant="outline" className="hidden sm:inline-flex text-xs font-normal border-emerald-500/30 text-emerald-400">
+              ● RLS Active
+            </Badge>
+            <span className="text-xs text-muted-foreground hidden md:inline">
+              GravityCRM v0.1
+            </span>
           </div>
         </header>
 
