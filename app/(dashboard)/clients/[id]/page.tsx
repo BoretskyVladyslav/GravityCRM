@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ClientStatusBadge, ClientSourceBadge, ClientStatusSelect, ClientDialog } from '@/components/clients'
 import { PaymentDialog } from '@/components/payments'
+import { TaskItem, TaskDialog } from '@/components/tasks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -398,48 +399,36 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
         {/* Tab 3: Tasks */}
         <TabsContent value="tasks" className="space-y-3">
+          <div className="flex justify-end">
+            <TaskDialog
+              clients={[{ id: client.id, full_name: client.full_name, company: client.company }]}
+              projects={projects.map((p) => ({
+                id: p.id,
+                client_id: client.id,
+                title: p.title,
+              }))}
+              defaultClientId={client.id}
+              trigger={
+                <Button size="sm" className="gap-1.5 shadow-xs">
+                  <Plus className="h-4 w-4" /> Додати задачу
+                </Button>
+              }
+            />
+          </div>
+
           {tasks.length > 0 ? (
             <div className="space-y-2">
-              {tasks.map((task) => {
-                const isDone = task.status === 'DONE'
-                const isOverdue =
-                  !isDone && task.due_date && new Date(task.due_date) < new Date()
-
-                return (
-                  <div
-                    key={task.id}
-                    className="p-3.5 rounded-xl bg-card border border-border/60 flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-5 w-5 rounded-md border flex items-center justify-center text-xs font-bold ${
-                          isDone
-                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                            : 'border-border'
-                        }`}
-                      >
-                        {isDone ? '✓' : ''}
-                      </div>
-                      <span className={`text-sm ${isDone ? 'line-through text-muted-foreground' : 'font-medium'}`}>
-                        {task.title}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs">
-                      {isOverdue && (
-                        <Badge variant="destructive" className="text-[10px]">
-                          Прострочено
-                        </Badge>
-                      )}
-                      {task.due_date && (
-                        <span className="text-muted-foreground">
-                          {new Date(task.due_date).toLocaleDateString('uk-UA')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+              {tasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={{
+                    ...task,
+                    clients: { id: client.id, full_name: client.full_name, company: client.company },
+                  }}
+                  showClient={false}
+                  showProject={true}
+                />
+              ))}
             </div>
           ) : (
             <Card className="border-dashed border-2 border-border/60">
@@ -447,7 +436,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
                 <CheckSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
                 <CardTitle className="text-sm">Немає завдань</CardTitle>
                 <CardDescription className="text-xs">
-                  Задачі для клієнта додаватимуться у модулі завдань (Phase 8).
+                  Створіть першу задачу для контролю домовленостей із клієнтом.
                 </CardDescription>
               </CardHeader>
             </Card>
