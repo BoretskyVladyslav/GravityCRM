@@ -15,6 +15,7 @@ import {
   FolderKanban,
 } from 'lucide-react'
 import { deleteCommunicationLog } from '@/app/(dashboard)/clients/communication-actions'
+import { toast } from 'sonner'
 import type { CommunicationLog, CommunicationChannel, MessageDirection } from '@/lib/types'
 
 const channelConfig: Record<
@@ -69,7 +70,16 @@ export function CommunicationItem({ log }: CommunicationItemProps) {
   async function handleDelete() {
     if (!confirm('Видалити цей запис з історії комунікацій?')) return
     setIsDeleting(true)
-    await deleteCommunicationLog(log.id)
+    try {
+      const res = await deleteCommunicationLog(log.id)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Запис комунікації видалено')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Помилка видалення')
+    }
     setIsDeleting(false)
   }
 

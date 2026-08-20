@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react'
 import { createCommunicationLog } from '@/app/(dashboard)/clients/communication-actions'
+import { toast } from 'sonner'
 import type { CommunicationChannel, MessageDirection } from '@/lib/types'
 
 interface CommunicationFormProps {
@@ -63,15 +64,19 @@ export function CommunicationForm({
       const res = await createCommunicationLog(null, formData)
       if (res.error) {
         setError(res.error)
+        toast.error(res.error)
         setIsLoading(false)
         return
       }
 
+      toast.success('Запис комунікації зафіксовано та оновлено час останнього контакту')
       // Reset form text
       formRef.current?.reset()
       setIsLoading(false)
     } catch (err: any) {
-      setError(err.message || 'Виникла непередбачувана помилка')
+      const msg = err.message || 'Виникла непередбачувана помилка'
+      setError(msg)
+      toast.error(msg)
       setIsLoading(false)
     }
   }

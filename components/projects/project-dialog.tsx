@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, Plus, Edit2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { createProject, updateProject } from '@/app/(dashboard)/projects/actions'
 import type { Project, ProjectStatus, Currency } from '@/lib/types'
 
@@ -63,6 +64,7 @@ export function ProjectDialog({
 
     if (!clientId) {
       setError('Будь ласка, оберіть клієнта для проєкту')
+      toast.error('Будь ласка, оберіть клієнта для проєкту')
       setIsLoading(false)
       return
     }
@@ -79,14 +81,18 @@ export function ProjectDialog({
 
       if (result.error) {
         setError(result.error)
+        toast.error(result.error)
         setIsLoading(false)
         return
       }
 
+      toast.success(isEditing ? 'Дані проєкту оновлено' : 'Проєкт успішно створено')
       setIsLoading(false)
       setIsOpen(false)
     } catch (err: any) {
-      setError(err.message || 'Виникла непередбачувана помилка')
+      const msg = err.message || 'Виникла непередбачувана помилка'
+      setError(msg)
+      toast.error(msg)
       setIsLoading(false)
     }
   }

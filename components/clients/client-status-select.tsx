@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { updateClientStatus } from '@/app/(dashboard)/clients/actions'
 import type { ClientStatus } from '@/lib/types'
 
@@ -26,7 +27,18 @@ export function ClientStatusSelect({
     if (newStatus === status) return
     setIsLoading(true)
     setStatus(newStatus)
-    await updateClientStatus(clientId, newStatus)
+    try {
+      const res = await updateClientStatus(clientId, newStatus)
+      if (res?.error) {
+        toast.error(res.error)
+        setStatus(currentStatus)
+      } else {
+        toast.success(`Статус клієнта змінено на ${newStatus}`)
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Не вдалося змінити статус')
+      setStatus(currentStatus)
+    }
     setIsLoading(false)
   }
 

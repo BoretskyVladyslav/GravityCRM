@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { toggleTaskStatus, deleteTask } from '@/app/(dashboard)/tasks/actions'
+import { toast } from 'sonner'
 import type { Task, TaskStatus } from '@/lib/types'
 
 export interface TaskWithRelations extends Task {
@@ -57,9 +58,21 @@ export function TaskItem({
     const nextStatus: TaskStatus = currentStatus === 'OPEN' ? 'DONE' : 'OPEN'
     setCurrentStatus(nextStatus)
 
-    const res = await toggleTaskStatus(task.id, currentStatus)
-    if (res.error) {
-      setCurrentStatus(currentStatus) // Revert on failure
+    try {
+      const res = await toggleTaskStatus(task.id, currentStatus)
+      if (res.error) {
+        toast.error(res.error)
+        setCurrentStatus(currentStatus) // Revert on failure
+      } else {
+        toast.success(
+          nextStatus === 'DONE'
+            ? 'Задачу виконано 🎉'
+            : 'Задачу повернуто в роботу'
+        )
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Помилка оновлення статусу')
+      setCurrentStatus(currentStatus)
     }
     setIsToggling(false)
   }
@@ -67,7 +80,16 @@ export function TaskItem({
   async function handleDelete() {
     if (!confirm('Видалити цю задачу?')) return
     setIsDeleting(true)
-    await deleteTask(task.id)
+    try {
+      const res = await deleteTask(task.id)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Задачу видалено')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Помилка видалення')
+    }
     setIsDeleting(false)
   }
 

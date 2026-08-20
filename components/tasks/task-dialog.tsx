@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, Plus, Edit2, AlertCircle, CheckSquare } from 'lucide-react'
+import { toast } from 'sonner'
 import { createTask, updateTask } from '@/app/(dashboard)/tasks/actions'
 import type { Task, TaskStatus } from '@/lib/types'
 
@@ -84,14 +85,18 @@ export function TaskDialog({
 
       if (result.error) {
         setError(result.error)
+        toast.error(result.error)
         setIsLoading(false)
         return
       }
 
+      toast.success(isEditing ? 'Задачу оновлено' : 'Нову задачу створено')
       setIsLoading(false)
       setIsOpen(false)
     } catch (err: any) {
-      setError(err.message || 'Виникла непередбачувана помилка')
+      const msg = err.message || 'Виникла непередбачувана помилка'
+      setError(msg)
+      toast.error(msg)
       setIsLoading(false)
     }
   }

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, Plus, Edit2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient, updateClient } from '@/app/(dashboard)/clients/actions'
 import type { Client, ClientSource, ClientStatus } from '@/lib/types'
 
@@ -65,14 +66,18 @@ export function ClientDialog({
 
       if (result.error) {
         setError(result.error)
+        toast.error(result.error)
         setIsLoading(false)
         return
       }
 
+      toast.success(isEditing ? 'Дані клієнта оновлено' : 'Нового клієнта успішно створено')
       setIsLoading(false)
       setIsOpen(false)
     } catch (err: any) {
-      setError(err.message || 'Виникла непередбачувана помилка')
+      const msg = err.message || 'Виникла непередбачувана помилка'
+      setError(msg)
+      toast.error(msg)
       setIsLoading(false)
     }
   }

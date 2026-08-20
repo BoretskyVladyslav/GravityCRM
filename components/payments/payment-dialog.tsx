@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, Plus, Edit2, AlertCircle, DollarSign } from 'lucide-react'
+import { toast } from 'sonner'
 import { createPayment, updatePayment } from '@/app/(dashboard)/payments/actions'
 import type { Payment, PaymentStatus, Currency } from '@/lib/types'
 
@@ -89,6 +90,7 @@ export function PaymentDialog({
 
     if (!clientId) {
       setError('Будь ласка, оберіть клієнта')
+      toast.error('Будь ласка, оберіть клієнта')
       setIsLoading(false)
       return
     }
@@ -107,14 +109,18 @@ export function PaymentDialog({
 
       if (result.error) {
         setError(result.error)
+        toast.error(result.error)
         setIsLoading(false)
         return
       }
 
+      toast.success(isEditing ? 'Платіж оновлено' : 'Платіж успішно зафіксовано')
       setIsLoading(false)
       setIsOpen(false)
     } catch (err: any) {
-      setError(err.message || 'Виникла непередбачувана помилка')
+      const msg = err.message || 'Виникла непередбачувана помилка'
+      setError(msg)
+      toast.error(msg)
       setIsLoading(false)
     }
   }

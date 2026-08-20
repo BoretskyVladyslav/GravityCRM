@@ -22,6 +22,8 @@ export const metadata: Metadata = {
     'Modern, secure CRM for freelancers and agencies built with Next.js 16, React 19, Supabase and Telegram integration.',
 }
 
+import { Toaster } from '@/components/ui/sonner'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +33,7 @@ export default function RootLayout({
     <html lang="uk" className={cn(geistSans.variable, geistMono.variable, 'dark')}>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
         {children}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   )

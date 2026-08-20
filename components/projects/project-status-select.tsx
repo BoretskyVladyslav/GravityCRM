@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { updateProjectStatus } from '@/app/(dashboard)/projects/actions'
 import type { ProjectStatus } from '@/lib/types'
 
@@ -26,7 +27,18 @@ export function ProjectStatusSelect({
     if (newStatus === status) return
     setIsLoading(true)
     setStatus(newStatus)
-    await updateProjectStatus(projectId, newStatus)
+    try {
+      const res = await updateProjectStatus(projectId, newStatus)
+      if (res?.error) {
+        toast.error(res.error)
+        setStatus(currentStatus)
+      } else {
+        toast.success(`Статус проєкту змінено на ${newStatus}`)
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Не вдалося змінити статус')
+      setStatus(currentStatus)
+    }
     setIsLoading(false)
   }
 
